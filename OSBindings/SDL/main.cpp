@@ -408,6 +408,7 @@ ParsedArguments parse_arguments(int argc, char *argv[]) {
 				const std::string name = argument.substr(0, split_index);
 				std::string value = argument.substr(split_index+1, std::string::npos);
 				arguments.selections[name] = value;
+				std::cout << "name:" << name << ",value:" << value << std::endl;
 			}
 		} else {
 			arguments.file_names.push_back(arg);

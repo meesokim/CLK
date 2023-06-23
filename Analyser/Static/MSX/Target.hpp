@@ -30,9 +30,18 @@ struct Target: public ::Analyser::Static::Target, public Reflection::StructImpl<
 	ReflectableEnum(Region,
 		Japan,
 		USA,
-		Europe
+		Europe,
+		Korea
 	);
 	Region region = Region::USA;
+
+	ReflectableEnum(Slot,
+		None,
+		Slot1,
+		Slot2
+	);
+
+	Slot slot = Slot::None;
 
 	Target(): Analyser::Static::Target(Machine::MSX) {
 		if(needs_declare()) {
@@ -42,6 +51,8 @@ struct Target: public ::Analyser::Static::Target, public Reflection::StructImpl<
 			AnnounceEnum(Region);
 			DeclareField(model);
 			AnnounceEnum(Model);
+			DeclareField(slot);
+			AnnounceEnum(Slot);
 		}
 	}
 };

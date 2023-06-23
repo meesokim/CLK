@@ -133,6 +133,12 @@ class MemorySlotHandler {
 		/*! Seeks the result of a read at @c address; this is used only if the area is unmapped. */
 		virtual uint8_t read([[maybe_unused]] uint16_t address) { return 0xff; }
 
+		/*! Announces an attempt to write @c value to @c address. */
+		virtual void writeio(uint16_t port, uint8_t value) {};
+
+		/*! Seeks the result of a read at @c address; this is used only if the area is unmapped. */
+		virtual uint8_t readio([[maybe_unused]] uint16_t port) { return 0xff; }
+
 		/*! @returns The probability that this handler is correct for the data it owns. */
 		float get_confidence() {
 			return confidence_counter_.get_confidence();

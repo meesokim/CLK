@@ -13,6 +13,7 @@
 #include "DiskROM.hpp"
 #include "Keyboard.hpp"
 #include "MemorySlotHandler.hpp"
+#include "ZemmixBus.hpp"
 
 #include "../../Analyser/Static/MSX/Cartridge.hpp"
 #include "Cartridges/ASCII8kb.hpp"
@@ -206,7 +207,7 @@ class ConcreteMachine:
 			speaker_.ay.set_port_handler(&ay_port_handler_);
 			speaker_.speaker.set_input_rate(3579545.0f / 2.0f);
 			tape_player_.set_clocking_hint_observer(this);
-
+			slot_ = (int) target.slot;
 			// Set the AY to 50% of available volume, the toggle to 10% and leave 40% for an SCC.
 			// If there is an OPLL, give it equal volume to the AY and expect some clipping.
 			if constexpr (has_opll) {
@@ -261,6 +262,16 @@ class ConcreteMachine:
 					is_ntsc = false;
 					character_generator = 1;
 					date_format = 2;
+				break;
+				case Target::Region::Korea:
+					if constexpr (model == Target::Model::MSX1) {
+						regional_bios_name = ROM::Name::MSXKoreanBIOS;
+					}
+					vdp_->set_tv_standard(TI::TMS::TVStandard::NTSC);
+
+					is_ntsc = true;
+					character_generator = 0;
+					date_format = 0;
 				break;
 			}
 			if constexpr (model == Target::Model::MSX1) {
@@ -344,7 +355,10 @@ class ConcreteMachine:
 			}
 
 			// Insert the media.
+			printf("check Insert Media\n");
 			insert_media(target.media);
+			if (target.media.cartridges.empty())
+				insert_slot(target.slot);
 
 			// Type whatever has been requested.
 			if(!target.loading_command.empty()) {
@@ -396,6 +410,22 @@ class ConcreteMachine:
 				return "MSX:" + cartridge_primary().handler->debug_type();
 			}
 			return "MSX";
+		}
+
+		bool insert_slot(const Analyser::Static::MSX::Target::Slot &slot) {
+			printf("Insert_Slot:%d\n", (int)slot);
+			switch(slot) {
+				default: break;
+				case Target::Slot::None:
+				break;
+				case Target::Slot::Slot1:
+					cartridge_secondary().handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(disk_slot()));
+				break;
+				case Target::Slot::Slot2:
+					cartridge_primary().handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(cartridge_slot()));
+				break;
+			}
+			return false;
 		}
 
 		bool insert_media(const Analyser::Static::Media &media) final {
@@ -910,6 +940,7 @@ class ConcreteMachine:
 		CPU::Z80::Processor<ConcreteMachine, false, false> z80_;
 		JustInTimeActor<TI::TMS::TMS9918<vdp_model()>> vdp_;
 		Intel::i8255::i8255<i8255PortHandler> i8255_;
+		int slot_ = 0;
 
 		Storage::Tape::BinaryTapePlayer tape_player_;
 		bool tape_player_is_sleeping_ = false;
@@ -1014,6 +1045,11 @@ class ConcreteMachine:
 		HandledSlot &cartridge_primary() {
 			return memory_slots_[1];
 		}
+
+		HandledSlot &cartridge_secondary() {
+			return memory_slots_[2];
+		}
+
 		HandledSlot &disk_primary() {
 			return memory_slots_[2];
 		}

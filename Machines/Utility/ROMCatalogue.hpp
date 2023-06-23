@@ -116,6 +116,7 @@ enum Name {
 	MSXJapaneseBIOS,
 	MSXAmericanBIOS,
 	MSXEuropeanBIOS,
+	MSXKoreanBIOS,
 	MSXDOS,
 
 	MSX2GenericBIOS,
