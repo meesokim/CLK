@@ -136,7 +136,7 @@ SOURCES += glob.glob('../../Storage/Tape/Parsers/*.cpp')
 env.Append(CCFLAGS = ['--std=c++17', '--std=c++1z', '-Wall', '-O2', '-DNDEBUG'])
 
 # Add additional libraries to link against.
-env.Append(LIBS = ['libz', 'pthread', 'GL'])
+env.Append(LIBS = ['libz', 'pthread', 'GL', 'dl'])
 
 # Build target.
 env.Program(target = 'clksignal', source = SOURCES)
