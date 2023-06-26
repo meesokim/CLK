@@ -42,6 +42,7 @@ void ZemmixBus::write(uint16_t address, uint8_t value, bool) {
 uint8_t ZemmixBus::read(uint16_t address) {
 	uint8_t b = 0xff;
 	b = readmsx(RD_SLOT1, address);
+    // printf("read(%04x):%02x\n", address, b);
 	return b;
 }
 
@@ -61,3 +62,6 @@ void ZemmixBus::run_for(HalfCycles half_cycles) {
 	// 800000/715909.
 }
 
+std::string ZemmixBus::debug_type() {
+	return "ZMXBUS";
+}

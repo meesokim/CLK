@@ -191,7 +191,7 @@ class ConcreteMachine:
 		// Provide 512kb of memory for an MSX 2; 64kb for an MSX 1. 'Slightly' arbitrary.
 		static constexpr size_t RAMSize = model == Target::Model::MSX2 ? 512 * 1024 : 64 * 1024;
 		static constexpr int ClockRate = 3579545;
-
+		int count = 500000;
 	public:
 		ConcreteMachine(const Target &target, const ROMMachine::ROMFetcher &rom_fetcher):
 			z80_(*this),
@@ -418,11 +418,12 @@ class ConcreteMachine:
 				default: break;
 				case Target::Slot::None:
 				break;
-				case Target::Slot::Slot1:
-					cartridge_secondary().handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(disk_slot()));
-				break;
 				case Target::Slot::Slot2:
-					cartridge_primary().handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(cartridge_slot()));
+					printf("ZMX_Cartridge2\n");
+					cartridge_secondary(false).handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(cartridge_slot2()));
+				case Target::Slot::Slot1:
+					printf("ZMX_Cartridge1\n");
+					cartridge_primary(false).handler = std::make_unique<MSX::ZemmixBus>(static_cast<MSX::MemorySlot &>(cartridge_slot()));
 				break;
 			}
 			return false;
@@ -615,13 +616,22 @@ class ConcreteMachine:
 							*cycle.value = final_slot_->secondary_paging() ^ 0xff;
 							break;
 						}
-
 						if(read_pointers_[address >> 13]) {
 							*cycle.value = read_pointers_[address >> 13][address & 8191];
-						} else {
+						} 
+						else 
+						{
 							const int slot_hit = (primary_slots_ >> ((address >> 14) * 2)) & 3;
 							memory_slots_[slot_hit].handler->run_for(memory_slots_[slot_hit].cycles_since_update.template flush<HalfCycles>());
 							*cycle.value = memory_slots_[slot_hit].handler->read(address);
+						}
+						if (!memory_slots_[address >> 14].mapped)
+						{
+							if (count-- < 0) { 
+								*cycle.value = memory_slots_[address >> 14].handler->read(address);
+								count = -1;
+							}
+							printf("<%s[%d]>read(%04x):%02x\n", memory_slots_[address >> 14].handler->debug_type().c_str(), address >> 14, address, *cycle.value);
 						}
 					break;
 
@@ -755,7 +765,7 @@ class ConcreteMachine:
 								[[fallthrough]];
 
 							default:
-								printf("Unhandled write %02x of %02x\n", address & 0xff, *cycle.value);
+								// printf("Unhandled write %02x of %02x\n", address & 0xff, *cycle.value);
 							break;
 						}
 					} break;
@@ -983,6 +993,8 @@ class ConcreteMachine:
 
 			/// The handler is updated just-in-time.
 			HalfCycles cycles_since_update;
+
+			bool mapped = true;
 		};
 		HandledSlot memory_slots_[4];
 		HandledSlot *final_slot_ = nullptr;
@@ -1038,15 +1050,24 @@ class ConcreteMachine:
 		MemorySlot &cartridge_slot() {
 			return cartridge_primary().subslot(0);
 		}
+
+		MemorySlot &cartridge_slot2() {
+			return cartridge_secondary().subslot(0);
+		}
+
 		MemorySlot &disk_slot() {
 			return disk_primary().subslot(0);
 		}
 
-		HandledSlot &cartridge_primary() {
+		HandledSlot &cartridge_primary(bool mapped = true) {
+			memory_slots_[1].mapped = mapped;
 			return memory_slots_[1];
 		}
 
-		HandledSlot &cartridge_secondary() {
+		HandledSlot &cartridge_secondary(bool mapped = true) {
+			memory_slots_[2].mapped = mapped;
+			if (!mapped)
+				memory_slots_[2].set_secondary_paging(0);
 			return memory_slots_[2];
 		}
 

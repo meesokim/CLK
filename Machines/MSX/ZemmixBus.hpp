@@ -32,6 +32,7 @@ class ZemmixBus: public MemorySlotHandler {
         void writeio(uint16_t port, uint8_t value) final;
         uint8_t readio(uint16_t port) final;
 		void run_for(HalfCycles half_cycles) final;
+        std::string debug_type() final;
     private:
         ReadfnPtr readmsx;
         WritefnPtr writemsx;
